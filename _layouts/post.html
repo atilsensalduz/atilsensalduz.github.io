@@ -6,21 +6,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
 {% seo %}
-    <link rel="stylesheet" href="{{ "/assets/main.css?v=" | append: site.github.build_revision | relative_url }}">
-    <!--[if lt IE 9]>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
-    <![endif]-->
+    <style>
+      .post {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .post-header {
+        margin-bottom: 30px;
+      }
+
+      .post-title {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .post-meta {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .post-content {
+        line-height: 1.6;
+        font-size: 1.1em;
+      }
+
+      .post-content h1 {
+        font-size: 2em;
+        margin-top: 2em;
+        margin-bottom: 1em;
+        color: #2c3e50;
+        padding-bottom: 0.3em;
+        border-bottom: 2px solid #eee;
+      }
+
+      .post-content h2 {
+        font-size: 1.5em;
+        margin-top: 1.8em;
+        margin-bottom: 0.8em;
+        color: #34495e;
+      }
+
+      .post-content pre {
+        background: #f8f8f8;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        margin: 1.5em 0;
+        border: 1px solid #e8e8e8;
+      }
+
+      .post-footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+
+      .post-tags {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .tag {
+        background: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 3px;
+        margin-right: 5px;
+        font-size: 0.9em;
+      }
+    </style>
     {% include head-custom.html %}
   </head>
   <body>
     <div class="wrapper">
       <header>
-        <h1><a href="{{ "/" | absolute_url }}">{{ site.title | default: site.github.repository_name }}</a></h1>
+        <h1>{{ site.title | default: site.github.repository_name }}</h1>
 
         {% if site.logo %}
           <img src="{{site.logo | relative_url}}" alt="Logo" />
         {% endif %}
-
       </header>
       <section>
         <article class="post">
@@ -30,20 +96,23 @@
               <time datetime="{{ page.date | date_to_xmlschema }}">
                 {{ page.date | date: "%B %-d, %Y" }}
               </time>
-              {% if page.tags %}
-              <span class="post-tags">
-                Tags: 
-                {% for tag in page.tags %}
-                  <span class="tag">{{ tag }}</span>
-                {% endfor %}
-              </span>
-              {% endif %}
             </p>
           </header>
 
           <div class="post-content">
             {{ content }}
           </div>
+
+          {% if page.tags %}
+          <footer class="post-footer">
+            <div class="post-tags">
+              Tags: 
+              {% for tag in page.tags %}
+                <span class="tag">{{ tag }}</span>
+              {% endfor %}
+            </div>
+          </footer>
+          {% endif %}
         </article>
       </section>
     </div>

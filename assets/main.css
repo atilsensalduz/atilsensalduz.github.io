@@ -1,0 +1,100 @@
+/* Post styles */
+.post {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.post-header {
+  margin-bottom: 30px;
+}
+
+.post-title {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.post-meta {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.post-content {
+  line-height: 1.6;
+  font-size: 1.1em;
+}
+
+.post-content h1 {
+  font-size: 2em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+  color: #2c3e50;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid #eee;
+}
+
+.post-content h2 {
+  font-size: 1.5em;
+  margin-top: 1.8em;
+  margin-bottom: 0.8em;
+  color: #34495e;
+}
+
+.post-content h3 {
+  font-size: 1.3em;
+  margin-top: 1.5em;
+  margin-bottom: 0.8em;
+  color: #455565;
+}
+
+.post-content p {
+  margin-bottom: 1.2em;
+  color: #2c3e50;
+}
+
+.post-content pre {
+  background: #f8f8f8;
+  padding: 15px;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  border: 1px solid #e8e8e8;
+}
+
+.post-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.post-tags {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.tag {
+  background: #f0f0f0;
+  padding: 3px 8px;
+  border-radius: 3px;
+  margin-right: 5px;
+  font-size: 0.9em;
+}
+
+/* General layout */
+.wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+header h1 {
+  color: #333;
+  margin: 0;
+  font-size: 1.8em;
+} 
