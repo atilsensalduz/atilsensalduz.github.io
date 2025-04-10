@@ -1,0 +1,6 @@
+theme: minima
+title: Atil Sensalduz
+description: Tracer of the unknown
+url: "https://atilsensalduz.github.io"
+plugins:
+  - jekyll-feed
