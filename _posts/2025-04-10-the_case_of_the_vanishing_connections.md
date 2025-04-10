@@ -45,7 +45,15 @@ Boom. “Connection broken.”
 
 By default, if you don’t explicitly set a transport when creating an http.Client, Go will fall back to using the global http.DefaultTransport. You can see this in [Go’s source code](https://github.com/golang/go/blob/master/src/net/http/client.go#L60).  
 So even if our tests were spinning up new clients and servers, they were still quietly sharing the same underlying transport.
-And when a test server shuts down, it calls CloseIdleConnections() — on the default transport. You can see that in [httptest.Server.Close()](https://github.com/golang/go/blob/master/src/net/http/httptest/server.go#L237-L242)  
+
+**Where CloseIdleConnections() Is Likely Being Called:**  
+When a test completes, it calls server.Close(), which triggers:  
+* Closing the test's HTTP server  
+* Closing any connections to that server that are in StateIdle or StateNew  
+* Calling CloseIdleConnections() on the default transport, which affects all idle connections in the shared pool, regardless of destination  
+
+You can see that in [httptest.Server.Close()](https://github.com/golang/go/blob/master/src/net/http/httptest/server.go#L237-L242)  
+
 This is the key piece that causes the race condition. When one test finishes and shuts down its server, it closes idle connections across the shared transport — possibly interrupting other tests that are still running.
 
 ## Why It Was So Intermittent
