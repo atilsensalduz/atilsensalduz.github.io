@@ -43,11 +43,11 @@ Boom. “Connection broken.”
 
 ## A Look Under the Hood
 
-By default, if you don’t explicitly set a transport when creating an http.Client, Go will fall back to using the global http.DefaultTransport. You can see this in [Go’s source code](https://github.com/golang/go/blob/master/src/net/http/client.go#L60).  
+By default, if you don’t [explicitly set a transport](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L62) when creating an [http.Client](https://github.com/google/go-github/blob/v70.0.0/github/github.go#L332), Go will fall back to using the global http.DefaultTransport. You can see this in [Go’s source code](https://github.com/golang/go/blob/master/src/net/http/client.go#L60).  
 So even if our tests were spinning up new clients and servers, they were still quietly sharing the same underlying transport.
 
 **Where CloseIdleConnections() Is Likely Being Called:**  
-When a test completes, it calls server.Close(), which triggers:  
+When a test completes, it calls [server.Close()](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L67), which triggers:  
 * Closing the test's HTTP server  
 * Closing any connections to that server that are in StateIdle or StateNew  
 * Calling CloseIdleConnections() on the default transport, which affects all idle connections in the shared pool, regardless of destination  
