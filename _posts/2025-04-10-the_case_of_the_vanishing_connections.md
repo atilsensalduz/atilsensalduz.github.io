@@ -5,8 +5,6 @@ title: "The Case of the Vanishing Connections"
 tags: go, debugging
 ---
 
-# The Case of the Vanishing Connections
-
 You know that sinking feeling when a test fails, but rerunning it magically makes it pass? That “uh oh, is this flaky?” moment. Yeah, we’ve been there. And recently, while working on the [go-github](https://github.com/google/go-github) client library, we hit one of those elusive intermittent failures that had us scratching our heads.
 Here’s how we tracked it down, what we found, and how we fixed it.
 
