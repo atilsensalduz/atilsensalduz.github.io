@@ -43,16 +43,51 @@ Boom. “Connection broken.”
 
 ## A Look Under the Hood
 
-By default, if you don’t [explicitly set a transport](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L62) when creating an [http.Client](https://github.com/google/go-github/blob/v70.0.0/github/github.go#L332), Go will fall back to using the global http.DefaultTransport. You can see this in [Go’s source code](https://github.com/golang/go/blob/master/src/net/http/client.go#L60).  
+Since our bug centered around HTTP transport behavior, it's worth diving deeper into how Go's transport system actually works.
+The http.Transport is the workhorse behind Go's HTTP client operations. It implements the RoundTripper interface, which is responsible for executing a single HTTP transaction. More importantly, it manages the complex lifecycle of network connections.
+At its core, the transport's job is to:  
+
+* Establish TCP connections to servers  
+* Handle connection pooling and reuse  
+* Manage TLS handshakes for HTTPS  
+* Apply protocol-specific behaviors (HTTP/1.1, HTTP/2)  
+* Deal with proxies, if configured  
+
+Connection pooling is where the magic happens. When a request completes, the transport doesn't immediately close the connection. Instead, it returns it to an internal pool for potential reuse. This connection reuse is a critical optimization that saves the overhead of establishing new TCP connections (and TLS handshakes) for subsequent requests to the same host.  
+
+By default, if you don’t [explicitly set a transport](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L62) when creating an [http.Client](https://github.com/google/go-github/blob/v70.0.0/github/github.go#L332), Go will fall back to using the global http.DefaultTransport. You can see this in [Go’s source code](https://github.com/golang/go/blob/master/src/net/http/client.go#L199-L204). 
+
+```
+func (c *Client) transport() RoundTripper {
+	if c.Transport != nil {
+		return c.Transport
+	}
+	return DefaultTransport
+}
+```
+
 So even if our tests were spinning up new clients and servers, they were still quietly sharing the same underlying transport.
 
 **Where CloseIdleConnections() Is Likely Being Called:**  
 When a test completes, it calls [server.Close()](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L67), which triggers:  
 * Closing the test's HTTP server  
 * Closing any connections to that server that are in StateIdle or StateNew  
-* Calling CloseIdleConnections() on the default transport, which affects all idle connections in the shared pool, regardless of destination  
+* Calling CloseIdleConnections() on the default transport, which affects all idle connections in the shared pool   
 
-You can see that in [httptest.Server.Close()](https://github.com/golang/go/blob/master/src/net/http/httptest/server.go#L237-L242)  
+Here’s the relevant snippet from [httptest.Server.Close()](https://github.com/golang/go/blob/master/src/net/http/httptest/server.go#L237-L242)  
+
+```
+	if t, ok := http.DefaultTransport.(closeIdleTransport); ok {
+		t.CloseIdleConnections()
+	}
+
+	// Also close the client idle connections.
+	if s.client != nil {
+		if t, ok := s.client.Transport.(closeIdleTransport); ok {
+			t.CloseIdleConnections()
+		}
+	}
+```
 
 This is the key piece that causes the race condition. When one test finishes and shuts down its server, it closes idle connections across the shared transport — possibly interrupting other tests that are still running.
 
@@ -70,6 +105,54 @@ But only sometimes, because this only happens if Test A and Test B hit that exac
 
 Once we identified the shared http.Transport as the villain, the solution was simple: don’t share.  
 Each test now gets its own http.Client with a unique Transport. That way, when one test closes its server and kills its connections, it doesn’t mess with others.  
+
+```
+func NewClient(httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	httpClient2 := *httpClient
+	c := &Client{client: &httpClient2}
+	c.initialize()
+	return c
+}
+
+```
+
+[Before](https://github.com/google/go-github/blob/v70.0.0/github/github_test.go#L60-L62):
+
+```
+client = NewClient(nil)
+```
+
+[After](https://github.com/google/go-github/blob/master/github/github_test.go#L60-L81):
+
+```
+	// Create a custom transport with isolated connection pool
+	transport := &http.Transport{
+		// Controls connection reuse - false allows reuse, true forces new connections for each request
+		DisableKeepAlives: false,
+		// Maximum concurrent connections per host (active + idle)
+		MaxConnsPerHost: 10,
+		// Maximum idle connections maintained per host for reuse
+		MaxIdleConnsPerHost: 5,
+		// Maximum total idle connections across all hosts
+		MaxIdleConns: 20,
+		// How long an idle connection remains in the pool before being closed
+		IdleConnTimeout: 20 * time.Second,
+	}
+
+	// Create HTTP client with the isolated transport
+	httpClient := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second,
+	}
+	// client is the GitHub client being tested and is
+	// configured to use test server.
+	client = NewClient(httpClient)
+```
+
+
 Here’s the PR with the fix:  
 👉 [#3529](https://github.com/google/go-github/pull/3529)  
 And the diff is satisfyingly small. One of those “tiny change, huge impact” moments.  
